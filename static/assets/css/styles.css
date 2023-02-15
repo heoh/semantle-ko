@@ -420,3 +420,14 @@ body.dark .subtext {
 body.dark.snow #embedim--snow {
   display: block;
 }
+
+#days {
+  margin-bottom: 40px;
+  position: relative;
+  width: 100%;
+}
+
+#days th:first-child,td:first-child {
+  width: 20%;
+  white-space: nowrap;
+}

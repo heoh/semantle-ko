@@ -42,14 +42,16 @@ for puzzle_number in range(current_puzzle):
 
 print("initializing leaderboards")
 app.leaderboards = dict()
-
-def add_record_to_db(record: dict):
-    with open('data/records.txt', 'a', encoding='utf-8') as f:
-        f.write(json.dumps(record) + '\n')
+app.leaders = dict()
 
 
 def get_records(day: int):
     return app.leaderboards[day] if day in app.leaderboards else []
+
+
+def add_record_to_db(record: dict):
+    with open('data/records.txt', 'a', encoding='utf-8') as f:
+        f.write(json.dumps(record) + '\n')
 
 
 def add_record_to_leaderboard(record: dict):
@@ -58,6 +60,7 @@ def add_record_to_leaderboard(record: dict):
     records = records + [record]
     records = sorted(records, key=lambda x: x['guess_count'])
     app.leaderboards[day] = records
+    app.leaders[day] = records[0]
 
 with open('data/records.txt', 'r', encoding='utf-8') as f:
     for line in f.readlines():
@@ -75,8 +78,15 @@ def update_nearest():
 
 
 @app.route('/')
-def get_index():
-    return render_template('index.html')
+def get_days():
+    items=[
+        {
+            'day': day,
+            'leader': app.leaders[day] if day in app.leaders else '없음',
+        }
+        for day in app.secrets.keys()
+    ]
+    return render_template('days.html', items=items)
 
 
 @app.route('/<int:day>')
@@ -121,8 +131,7 @@ def get_guess(day: int, word: str):
 @app.route('/similarity/<int:day>')
 def get_similarity(day: int):
     nearest_dists = sorted([v[1] for v in app.nearests[day].values()])
-    records = get_records(day)
-    leader = records[0] if records else None
+    leader = app.leaders[day] if day in app.leaders else None
     return jsonify({"top": nearest_dists[-2], "top10": nearest_dists[-11], "rest": nearest_dists[0], "leader": leader})
 
 
