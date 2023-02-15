@@ -427,7 +427,7 @@ body.dark.snow #embedim--snow {
   width: 100%;
 }
 
-#days th:first-child,td:first-child {
+#days th:first-child, #days td:first-child {
   width: 20%;
   white-space: nowrap;
 }
