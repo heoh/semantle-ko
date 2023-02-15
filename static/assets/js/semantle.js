@@ -36,7 +36,7 @@ function $(id) {
 function share() {
     // We use the stored guesses here, because those are not updated again
     // once you win -- we don't want to include post-win guesses here.
-    const text = solveStory(JSON.parse(storage.getItem("guesses")), puzzleNumber);
+    const text = solveStory(JSON.parse(storage.getItem(`guesses[${puzzleNumber}]`)), puzzleNumber);
     const copied = ClipboardJS.copy(text);
 
     if (copied) {
@@ -85,7 +85,7 @@ function getUpdateTimeHours() {
 
 function solveStory(guesses, puzzleNumber) {
     let guess_count = guesses.length - 1;
-    let is_win = storage.getItem("winState") == 1;
+    let is_win = storage.getItem(`winState[${puzzleNumber}]`) == 1;
     if (is_win) {
         guess_count += 1
         if (guess_count == 1) {
@@ -104,7 +104,7 @@ function solveStory(guesses, puzzleNumber) {
         return out;
     }
 
-    let time = storage.getItem('endTime') - storage.getItem('startTime');
+    let time = storage.getItem(`endTime[${puzzleNumber}]`) - storage.getItem(`startTime[${puzzleNumber}]`);
     let timeFormatted = new Date(time).toISOString().substr(11, 8).replace(":", "시간").replace(":", "분");
     let timeInfo = `소요 시간: ${timeFormatted}초\n`
     if (time > 24 * 3600000) {
@@ -186,6 +186,7 @@ let Semantle = (function() {
 
     async function init() {
         let yesterday = await getYesterday()
+        yesterday = '???'
         $('#yesterday2').innerHTML = `어제의 정답 단어는 <b>"${yesterday}"</b>입니다.`;
         $('#yesterday-nearest1k').innerHTML = `정답 단어와 비슷한, <a href="/nearest1k/${yesterdayPuzzleNumber}">유사도 기준 상위 1,000개의 단어</a>를 확인할 수 있습니다.`;
 
@@ -204,15 +205,6 @@ let Semantle = (function() {
             1,000번째로 유사한 단어의 유사도는 ${(similarityStory.rest * 100).toFixed(2)} 입니다.`;
         } catch {
             // we can live without this in the event that something is broken
-        }
-
-        const storagePuzzleNumber = storage.getItem("puzzleNumber");
-        if (storagePuzzleNumber != puzzleNumber) {
-            storage.removeItem("guesses");
-            storage.removeItem("winState");
-            storage.removeItem("startTime");
-            storage.removeItem("endTime");
-            storage.setItem("puzzleNumber", puzzleNumber);
         }
 
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
@@ -319,7 +311,7 @@ let Semantle = (function() {
             let similarity = guessData.sim * 100.0;
             if (!guessed.has(guess)) {
                 if (guessCount == 0) {
-                    storage.setItem('startTime', Date.now())
+                    storage.setItem(`startTime[${puzzleNumber}]`, Date.now())
                 }
                 guessCount += 1;
                 gtag('event', 'nth_guess', {
@@ -366,9 +358,9 @@ let Semantle = (function() {
             return false;
         });
 
-        const winState = storage.getItem("winState");
+        const winState = storage.getItem(`winState[${puzzleNumber}]`);
         if (winState != null) {
-            guesses = JSON.parse(storage.getItem("guesses"));
+            guesses = JSON.parse(storage.getItem(`guesses[${puzzleNumber}]`));
             for (let guess of guesses) {
                 guessed.add(guess[1]);
             }
@@ -441,13 +433,8 @@ let Semantle = (function() {
     }
 
     function saveGame(guessCount, winState) {
-        // If we are in a tab still open from yesterday, we're done here.
-        // Don't save anything because we may overwrite today's game!
-        let savedPuzzleNumber = storage.getItem("puzzleNumber");
-        if (savedPuzzleNumber != puzzleNumber) { return }
-
-        storage.setItem("winState", winState);
-        storage.setItem("guesses", JSON.stringify(guesses));
+        storage.setItem(`winState[${puzzleNumber}]`, winState);
+        storage.setItem(`guesses[${puzzleNumber}]`, JSON.stringify(guesses));
     }
 
     function getStats() {
@@ -487,10 +474,19 @@ let Semantle = (function() {
     function inputNickname() {
         const defaultNickname = storage.getItem('nickname') || 'Unknown';
         const nickname = prompt("이름을 입력하세요: ", defaultNickname);
+        if (nickname === null) {
+            return false;
+        }
         storage.setItem('nickname', nickname);
+        return true;
     }
 
     async function submitRecord() {
+        const recorded = storage.getItem(`recordState[${puzzleNumber}]`) == 1;
+        if (recorded) {
+            return;
+        }
+
         const record = {
             'nickname': storage.getItem('nickname') || 'Unknown',
             'guess_count': guesses.length,
@@ -506,14 +502,16 @@ let Semantle = (function() {
         });
 
         if (response.ok) {
+            storage.setItem(`recordState[${puzzleNumber}]`, 1);
             alert("등록 완료");
         }
     }
 
     function endGame(won, countStats) {
+        const recorded = storage.getItem(`recordState[${puzzleNumber}]`) == 1;
         let stats = getStats();
-        if (storage.getItem('endTime') == null) {
-            storage.setItem('endTime', Date.now())
+        if (storage.getItem(`endTime[${puzzleNumber}]`) == null) {
+            storage.setItem(`endTime[${puzzleNumber}]`, Date.now())
         }
         if (countStats) {
             const onStreak = (stats['lastEnd'] == puzzleNumber - 1);
@@ -564,11 +562,14 @@ let Semantle = (function() {
 
         if (countStats) {
             saveGame(guesses.length, won ? 1 : 0);
-            $('#record').addEventListener('click', function(event) {
-                $('#record').disabled = true;
+        }
 
-                inputNickname();
-                submitRecord();
+        if (won && !recorded) {
+            $('#record').addEventListener('click', function(event) {
+                if (inputNickname()) {
+                    $('#record').disabled = true;
+                    submitRecord();
+                }
             });
         }
         else {
