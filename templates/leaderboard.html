@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="꼬맨틀 — 리더보드">
+    <meta property="og:url" content="{{ request.base_url }}">
+    <meta property="og:image" content="{{ request.host_url }}assets/icon-512.png">
+    <meta property="og:description" content="리더보드입니다.">
+
+    <title>꼬맨틀 — 리더보드</title>
+    <link rel="stylesheet" href="/assets/css/modern-normalize.min.css">
+    <script src="/assets/js/nearest1k.js?v=20230125"></script>
+
+    <link rel="icon" href="/assets/favicon.ico" sizes="any">
+    <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
+    <link rel="manifest" href="/assets/manifest.webmanifest">
+
+    <!-- Global site tag (gtag.js) - Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-Y0ED7GGKGN"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag() { dataLayer.push(arguments); }
+        gtag('js', new Date());
+
+        gtag('config', 'G-Y0ED7GGKGN');
+    </script>
+</head>
+
+<body>
+    <div id="leaderboard">
+        <table>
+            <tr>
+                <th>순위</th>
+                <th>닉네임</th>
+                <th>추측 단어 갯수</th>
+                <th>성공 시각</th>
+            </tr>
+            {% for record in records %}
+            <tr>
+                <td> {{record['rank']}}</td>
+                <td> {{record['nickname']}}</td>
+                <td> {{record['guess_count']}}</td>
+                <td> {{record['timestamp']}}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <br />
+    <a href="/{{day}}">메인 페이지로 돌아가기</a>
+</body>
+
+</html>

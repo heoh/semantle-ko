@@ -1,3 +1,4 @@
+import json
 import pickle
 from datetime import date, datetime
 
@@ -8,7 +9,8 @@ from flask import (
     send_file,
     send_from_directory,
     jsonify,
-    render_template
+    render_template,
+    request,
 )
 from pytz import utc, timezone
 
@@ -32,23 +34,38 @@ print("initializing nearest words for solutions")
 app.secrets = dict()
 app.nearests = dict()
 current_puzzle = (utc.localize(datetime.utcnow()).astimezone(KST).date() - FIRST_DAY).days % NUM_SECRETS
-for offset in range(-2, 2):
-    puzzle_number = (current_puzzle + offset) % NUM_SECRETS
+for puzzle_number in range(current_puzzle):
     secret_word = secrets[puzzle_number]
     app.secrets[puzzle_number] = secret_word
     app.nearests[puzzle_number] = get_nearest(puzzle_number, secret_word, valid_nearest_words, valid_nearest_vecs)
+    print(end='', flush=True)
+
+print("initializing leaderboards")
+app.leaderboards = dict()
+
+def add_record_to_db(record: dict):
+    with open('data/records.txt', 'a', encoding='utf-8') as f:
+        f.write(json.dumps(record) + '\n')
 
 
-@scheduler.scheduled_job(trigger=CronTrigger(hour=1, minute=0, timezone=KST))
+def add_record_to_leaderboard(record: dict):
+    day = record['day']
+    records = app.leaderboards[day] if day in app.leaderboards else []
+    records = records + [record]
+    records = sorted(records, key=lambda x: x['guess_count'])
+    app.leaderboards[day] = records
+
+with open('data/records.txt', 'r', encoding='utf-8') as f:
+    for line in f.readlines():
+        record = json.loads(line)
+        add_record_to_leaderboard(record)
+
+
+@scheduler.scheduled_job(trigger=CronTrigger(hour=0, minute=0, timezone=KST))
 def update_nearest():
     print("scheduled stuff triggered!")
-    next_puzzle = ((utc.localize(datetime.utcnow()).astimezone(KST).date() - FIRST_DAY).days + 1) % NUM_SECRETS
+    next_puzzle = ((utc.localize(datetime.utcnow()).astimezone(KST).date() - FIRST_DAY).days) % NUM_SECRETS
     next_word = secrets[next_puzzle]
-    to_delete = (next_puzzle - 4) % NUM_SECRETS
-    if to_delete in app.secrets:
-        del app.secrets[to_delete]
-    if to_delete in app.nearests:
-        del app.nearests[to_delete]
     app.secrets[next_puzzle] = next_word
     app.nearests[next_puzzle] = get_nearest(next_puzzle, next_word, valid_nearest_words, valid_nearest_vecs)
 
@@ -56,6 +73,11 @@ def update_nearest():
 @app.route('/')
 def get_index():
     return render_template('index.html')
+
+
+@app.route('/<int:day>')
+def get_index_by_day(day: int):
+    return render_template('index.html', day=day)
 
 
 @app.route('/robots.txt')
@@ -123,3 +145,34 @@ def give_up(day: int):
         return '저런...', 404
     else:
         return app.secrets[day]
+
+
+@app.route('/leaderboard/<int:day>')
+def get_leaderboard(day: int):
+    leaderboard = app.leaderboards[day] if day in app.leaderboards else []
+    records = [
+        dict(
+            rank=i+1,
+            nickname=record['nickname'],
+            timestamp=utc.localize(datetime.fromtimestamp(record['timestamp'])).astimezone(KST).strftime('%Y-%m-%d %H:%M:%S'),
+            guess_count=record['guess_count'],
+        ) for i, record in enumerate(leaderboard)
+    ]
+    return render_template('leaderboard.html', day=day, records=records)
+
+
+@app.route('/record/<int:day>', methods=['POST'])
+def submit_record(day: int):
+    params = request.get_json()
+    record = {
+        'day': day,
+        'timestamp': datetime.utcnow().timestamp(),
+        'nickname': params['nickname'],
+        'guess_count': params['guess_count'],
+    }
+
+    add_record_to_db(record)
+    add_record_to_leaderboard(record)
+    print(f"Add record: {record}", flush=True)
+
+    return jsonify({'status': 'ok'})
