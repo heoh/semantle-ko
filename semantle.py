@@ -48,9 +48,13 @@ def add_record_to_db(record: dict):
         f.write(json.dumps(record) + '\n')
 
 
+def get_records(day: int):
+    return app.leaderboards[day] if day in app.leaderboards else []
+
+
 def add_record_to_leaderboard(record: dict):
     day = record['day']
-    records = app.leaderboards[day] if day in app.leaderboards else []
+    records = get_records(day)
     records = records + [record]
     records = sorted(records, key=lambda x: x['guess_count'])
     app.leaderboards[day] = records
@@ -117,7 +121,9 @@ def get_guess(day: int, word: str):
 @app.route('/similarity/<int:day>')
 def get_similarity(day: int):
     nearest_dists = sorted([v[1] for v in app.nearests[day].values()])
-    return jsonify({"top": nearest_dists[-2], "top10": nearest_dists[-11], "rest": nearest_dists[0]})
+    records = get_records(day)
+    leader = records[0] if records else None
+    return jsonify({"top": nearest_dists[-2], "top10": nearest_dists[-11], "rest": nearest_dists[0], "leader": leader})
 
 
 @app.route('/yesterday/<int:today>')

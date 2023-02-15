@@ -191,8 +191,14 @@ let Semantle = (function() {
 
         try {
             similarityStory = await getSimilarityStory(puzzleNumber);
+            const leaderText = (similarityStory.leader
+                ? `현재 1등은 <b>${similarityStory.leader.guess_count}번째 추측</b>만에 정답을 맞히신 <b>${similarityStory.leader.nickname}</b>님 입니다!`
+                : "이 꼬맨틀은 아직 아무도 풀지 못했습니다. <b>최초의 정답자</b>에 도전하세요!"
+            );
+
             $('#similarity-story').innerHTML = `
-            ${puzzleNumber}번째 꼬맨틀의 정답 단어를 맞혀보세요. <a href="/leaderboard/${puzzleNumber}">&#91;리더보드&#93;</a><br/>
+            ${puzzleNumber}번째 꼬맨틀의 정답 단어를 맞혀보세요.<br/>
+            ${leaderText} <a href="/leaderboard/${puzzleNumber}">&#91;리더보드&#93;</a><br/>
             정답 단어와 가장 유사한 단어의 유사도는 <b>${(similarityStory.top * 100).toFixed(2)}</b> 입니다.
             10번째로 유사한 단어의 유사도는 ${(similarityStory.top10 * 100).toFixed(2)}이고,
             1,000번째로 유사한 단어의 유사도는 ${(similarityStory.rest * 100).toFixed(2)} 입니다.`;
