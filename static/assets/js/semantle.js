@@ -107,9 +107,6 @@ function solveStory(guesses, puzzleNumber) {
     let time = storage.getItem(`endTime[${puzzleNumber}]`) - storage.getItem(`startTime[${puzzleNumber}]`);
     let timeFormatted = new Date(time).toISOString().substr(11, 8).replace(":", "시간").replace(":", "분");
     let timeInfo = `소요 시간: ${timeFormatted}초\n`
-    if (time > 24 * 3600000) {
-        timeInfo = '소요 시간: 24시간 이상\n'
-    }
     if (!shareTime) {
         timeInfo = ''
     }
