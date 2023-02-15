@@ -137,13 +137,16 @@ def get_similarity(day: int):
 
 @app.route('/yesterday/<int:today>')
 def get_solution_yesterday(today: int):
+    yesterday = (today - 1) % NUM_SECRETS
+    if yesterday not in app.secrets:
+        return '???'
     return app.secrets[(today - 1) % NUM_SECRETS]
 
 
 @app.route('/nearest1k/<int:day>')
 def get_nearest_1k(day: int):
     if day not in app.secrets:
-        return "이 날의 가장 유사한 단어는 현재 사용할 수 없습니다. 그저께부터 내일까지만 확인할 수 있습니다.", 404
+        return "이 날의 가장 유사한 단어는 현재 사용할 수 없습니다.", 404
     solution = app.secrets[day]
     words = [
         dict(
