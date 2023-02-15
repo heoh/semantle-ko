@@ -140,7 +140,7 @@ def get_solution_yesterday(today: int):
     yesterday = (today - 1) % NUM_SECRETS
     if yesterday not in app.secrets:
         return '???'
-    return app.secrets[(today - 1) % NUM_SECRETS]
+    return app.secrets[yesterday]
 
 
 @app.route('/nearest1k/<int:day>')
