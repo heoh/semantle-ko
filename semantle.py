@@ -111,7 +111,6 @@ def send_static(path):
 
 @app.route('/guess/<int:day>/<string:word>')
 def get_guess(day: int, word: str):
-    print(app.secrets[day])
     if app.secrets[day].lower() == word.lower():
         word = app.secrets[day]
     rtn = {"guess": word}
