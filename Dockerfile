@@ -24,6 +24,6 @@ ENTRYPOINT [
     "--access-logfile", "/app/gunicorn.log",
     "--capture-output",
     "--timeout", "300",
-    "--workers", "1",
-    "--threads", "4",
+    "-k", "gevent",
+    "--worker-connections", "1000",
 ]
