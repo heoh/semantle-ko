@@ -24,6 +24,11 @@ FIRST_DAY = date(2022, 4, 1)
 scheduler = BackgroundScheduler()
 scheduler.start()
 
+
+def get_current_puzzle():
+    return ((utc.localize(datetime.utcnow()).astimezone(KST).date() - FIRST_DAY).days) % NUM_SECRETS
+
+
 app = Flask(__name__)
 print("loading valid nearest")
 with open('data/valid_nearest.dat', 'rb') as f:
@@ -33,8 +38,8 @@ with open('data/secrets.txt', 'r', encoding='utf-8') as f:
 print("initializing nearest words for solutions")
 app.secrets = dict()
 app.nearests = dict()
-current_puzzle = (utc.localize(datetime.utcnow()).astimezone(KST).date() - FIRST_DAY).days % NUM_SECRETS
-for puzzle_number in range(current_puzzle):
+current_puzzle = get_current_puzzle()
+for puzzle_number in range(current_puzzle + 1):
     secret_word = secrets[puzzle_number]
     app.secrets[puzzle_number] = secret_word
     app.nearests[puzzle_number] = get_nearest(puzzle_number, secret_word, valid_nearest_words, valid_nearest_vecs)
@@ -68,10 +73,10 @@ with open('data/records.txt', 'r', encoding='utf-8') as f:
         add_record_to_leaderboard(record)
 
 
-@scheduler.scheduled_job(trigger=CronTrigger(hour=0, minute=0, timezone=KST))
+@scheduler.scheduled_job(trigger=CronTrigger(hour=1, minute=0, timezone=KST))
 def update_nearest():
     print("scheduled stuff triggered!")
-    next_puzzle = ((utc.localize(datetime.utcnow()).astimezone(KST).date() - FIRST_DAY).days) % NUM_SECRETS
+    next_puzzle = (get_current_puzzle() + 1) % NUM_SECRETS
     next_word = secrets[next_puzzle]
     app.secrets[next_puzzle] = next_word
     app.nearests[next_puzzle] = get_nearest(next_puzzle, next_word, valid_nearest_words, valid_nearest_vecs)
@@ -79,12 +84,14 @@ def update_nearest():
 
 @app.route('/')
 def get_days():
+    current_puzzle = get_current_puzzle()
     items=[
         {
             'day': day,
             'leader': app.leaders[day] if day in app.leaders else '없음',
         }
         for day in app.secrets.keys()
+        if day <= current_puzzle
     ]
     return render_template('days.html', items=items)
 
