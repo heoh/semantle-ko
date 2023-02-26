@@ -17,4 +17,4 @@ ENV PATH="/root/.cargo/bin:${PATH}"
 COPY ./requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT [ "gunicorn", "semantle:app", "--bind", "0.0.0.0:80", "--error-logfile", "/app/gunicorn.error.log", "--access-logfile", "/app/gunicorn.log", "--capture-output", "--timeout", "300", "-k", "gevent", "--worker-connections", "1000"]
+ENTRYPOINT [ "gunicorn", "semantle:app" ]

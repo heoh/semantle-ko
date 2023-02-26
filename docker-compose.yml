@@ -8,3 +8,18 @@ services:
       - "8899:80"
     volumes:
       - .:/app:z
+    command:
+      - --bind
+      - "0.0.0.0:80"
+      - --error-logfile
+      - "/app/gunicorn.error.log"
+      - --access-logfile
+      - "/app/gunicorn.log"
+      - --capture-output
+      - --timeout
+      - "300"
+      - -k
+      - "gevent"
+      - --worker-connections
+      - "1000"
+      - --reload
