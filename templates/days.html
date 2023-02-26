@@ -101,21 +101,6 @@
         <p id="similarity-story"></p>
         <div id="error" style="color:#ff0000"></div>
         <table id="days">
-            <tr>
-                <th>회차</th>
-                <th>1등</th>
-            </tr>
-            {% for item in items %}
-            <tr>
-                <td> <a href="/{{item['day']}}">{{item['day']}}번째 꼬맨틀</a></td>
-                <td>
-                    {% if item['leader'] is not none %}
-                    {{item['leader']['nickname']}}
-                    {% else %}
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
         </table>
 
         <footer>

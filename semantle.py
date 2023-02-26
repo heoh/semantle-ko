@@ -83,21 +83,26 @@ def update_nearest():
 
 
 @app.route('/')
+def get_index():
+    return render_template('days.html')
+
+
+@app.route('/days')
 def get_days():
     current_puzzle = get_current_puzzle()
-    items=[
+    items = [
         {
             'day': day,
-            'leader': app.leaders[day] if day in app.leaders else '없음',
+            'leader': app.leaders[day] if day in app.leaders else None,
         }
         for day in app.secrets.keys()
         if day <= current_puzzle
     ]
-    return render_template('days.html', items=items)
+    return jsonify(items)
 
 
 @app.route('/<int:day>')
-def get_index_by_day(day: int):
+def get_quiz_by_day(day: int):
     return render_template('index.html', day=day)
 
 

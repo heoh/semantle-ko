@@ -9,6 +9,7 @@
 */
 'use strict';
 
+let days = [];
 let gameOver = false;
 let guesses = [];
 let guessed = new Set();
@@ -20,7 +21,7 @@ const initialDate = new Date('2022-04-01T00:00:00+09:00');
 const puzzleNumber = (Math.floor((new Date() - initialDate) / 86400000) - 1) % numPuzzles;
 const yesterdayPuzzleNumber = (puzzleNumber + numPuzzles - 1) % numPuzzles;
 const storage = window.localStorage;
-let chrono_forward = 1;
+let chrono_forward = -1;
 let prefersDarkColorScheme = false;
 // settings
 let darkMode = storage.getItem("darkMode") === 'true';
@@ -54,27 +55,13 @@ const words_selected = [];
 const cache = {};
 let similarityStory = null;
 
-function guessRow(similarity, oldGuess, percentile, guessNumber, guess) {
-    let percentileText = percentile;
-    let progress = "";
-    let closeClass = "";
-    if (similarity >= similarityStory.rest * 100 && percentile === '1000위 이상') {
-        percentileText = '<span class="weirdWord">????<span class="tooltiptext">이 단어는 사전에는 없지만, 데이터셋에 포함되어 있으며 1,000위 이내입니다.</span></span>';
-    }
-    if (typeof percentile === 'number') {
-            closeClass = "close";
-            percentileText = `<span class="percentile">${percentile}</span>&nbsp;`;
-            progress = ` <span class="progress-container">
-<span class="progress-bar" style="width:${(1001 - percentile)/10}%">&nbsp;</span>
-</span>`;
-    }
-    let style = '';
-    if (oldGuess === guess) {
-        style = 'style="color: #f7617a;font-weight: 600;"';
-    }
-    return `<tr><td>${guessNumber}</td><td ${style}>${oldGuess}</td><td>${similarity.toFixed(2)}</td><td class="${closeClass}">${percentileText}${progress}
-</td></tr>`;
-
+function dayRow(day, leader) {
+    let dayText = `${day}번째 꼬맨틀`;
+    let leaderText = leader ? leader.nickname : '';
+    return `<tr>
+        <td><a href="/${day}">${dayText}</a></td>
+        <td>${leaderText}</td>
+    </tr>`;
 }
 
 function getUpdateTimeHours() {
@@ -137,7 +124,19 @@ function solveStory(guesses, puzzleNumber) {
 }
 
 let Semantle = (function() {
+    async function getDays() {
+        const url = "/days";
+        try {
+            return (await fetch(url)).json();
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function init() {
+        days = await getDays();
+        updateDays();
+
         if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
             prefersDarkColorScheme = true;
         }
@@ -183,8 +182,23 @@ let Semantle = (function() {
         $('#share-guesses').checked = shareGuesses;
         $('#share-time').checked = shareTime;
         $('#share-top-guess').checked = shareTopGuess;
-
     }
+
+    function updateDays() {
+        let inner = `<tr><th id="chronoOrder">회차</th><th>1등</th></tr>`;
+        inner += "<tr><td colspan=4><hr></td></tr>";
+        for (const entry of days) {
+            const { day, leader } = entry;
+            inner += dayRow(day, leader);
+        }
+        $('#days').innerHTML = inner;
+        $('#chronoOrder').addEventListener('click', event => {
+            days.sort(function(a, b){return chrono_forward * (a['day']-b['day'])});
+            chrono_forward *= -1;
+            updateDays();
+        });
+    }
+
 
     function openSettings() {
         document.body.classList.add('dialog-open', 'settings-open');
